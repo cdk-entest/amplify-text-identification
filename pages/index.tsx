@@ -1,33 +1,42 @@
 import type { NextPage } from "next";
-import Head from "next/head";
-import Image from "next/image";
 import { useState } from "react";
-import { Box, Text} from "@chakra-ui/react"
-import styles from "../styles/Home.module.css";
+import { Box, Text } from "@chakra-ui/react";
+import { Predictions } from "aws-amplify";
+import { UploadForm } from "../src/components/upload-form";
 
 const Home: NextPage = () => {
+  const [text, setText] = useState("");
 
-  const [text, setText] = useState('')
+ const identifyText = async (file: File) => {
+   setText("...");
+   console.log("start processing ...", file);
+   Predictions.identify({
+     text: {
+       source: {
+         file,
+       },
+       format: "PLAIN",
+     },
+   }).then(({ text: { fullText } }) => {
+     console.log(fullText);
+     setText(fullText);
+   });
+ };
 
   return (
-    <Box maxW={'1000px'} margin='auto' marginTop={'100px'}>
-      <UploadForm></UploadForm>
+    <Box maxW={"1000px"} margin="auto" marginTop={"100px"}>
+      <UploadForm processFile={identifyText}></UploadForm>
       <Box
-        backgroundColor={'gray.100'}
-        marginTop='20px'
-        height={'300px'}
-        overflowY='auto'
-        padding={'10px'}
+        backgroundColor={"gray.100"}
+        marginTop="20px"
+        height={"300px"}
+        overflowY="auto"
+        padding={"10px"}
       >
         <Text>{text}</Text>
       </Box>
-
     </Box>
   );
 };
-
-const UploadForm = () => {
-
-}
 
 export default Home;
