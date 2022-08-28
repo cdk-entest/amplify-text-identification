@@ -1,34 +1,163 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+---
+title: Amplify Text Identification
+description: Amplify Text Identification
+author: haimtran
+publishedDate: 08/10/2022
+date: 2022-08-10
+---
 
-## Getting Started
+## Introduction
 
-First, run the development server:
+[GitHub](https://github.com/entest-hai/amplify-text-identification) shows how to setup and use amplify text to speech api. Amplify provides many AI/ML services such as text to speed, translation, text identification, etc [predictions](https://docs.amplify.aws/lib/predictions/intro/q/platform/js/)
+
+<LinkedImage
+  href="https://youtu.be/0z_hqB4wh_Y"
+  height={400}
+  alt="Amplify Text Indentification"
+  src="/thumbnail/amplify-text-identification.png"
+/>
+
+## Init nextjs project
 
 ```bash
-npm run dev
-# or
-yarn dev
+npx create-next-app@latest --typescript
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+add chakra-ui
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+```bash
+npm i @chakra-ui/react @emotion/react @emotion/styled framer-motion aws-amplify react-icons
+```
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+add amplify
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```bash
+npm i aws-amplify
+```
 
-## Learn More
+## Amplify init
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+amplify init
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+add auth and choose default with useremail login
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```bash
+amplfy add auth
+```
 
-## Deploy on Vercel
+add predictions and select text to speech for this example
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+amplify add predictions
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Amplify configure in react
+
+in \_app.ts configure amplify
+
+```tsx
+import type { AppProps } from 'next/app'
+import { ChakraProvider } from '@chakra-ui/react'
+import { Amplify, Auth, Predictions } from 'aws-amplify'
+import { AmazonAIPredictionsProvider } from '@aws-amplify/predictions'
+import awsconfig from './../src/aws-exports'
+try {
+  Amplify.configure(awsconfig)
+  Amplify.register(Predictions)
+  Amplify.register(Auth)
+  Predictions.addPluggable(new AmazonAIPredictionsProvider())
+} catch (error) {
+  console.log(error)
+}
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <ChakraProvider>
+      <Component {...pageProps} />
+    </ChakraProvider>
+  )
+}
+```
+
+## Text Identification
+
+You can choose images from local or S3. I re-use the upload button to choose an image and then call the Amplify API to identify plain text from an image.
+
+```tsx
+import { Text, Box } from '@chakra-ui/react'
+import { Predictions } from 'aws-amplify'
+import { useState } from 'react'
+import { UploadForm } from '@components/upload-form'
+
+const TextIdentification = () => {
+  const [text, setText] = useState('...')
+
+  // identify text - call amplify api
+
+  // ui component
+}
+```
+
+```tsx
+const identifyText = async (file: File) => {
+  setText('...')
+  console.log('start processing ...', file)
+  Predictions.identify({
+    text: {
+      source: {
+        file
+      },
+      format: 'PLAIN'
+    }
+  }).then(({ text: { fullText } }) => {
+    console.log(fullText)
+    setText(fullText)
+  })
+}
+```
+
+UI
+
+```tsx
+return (
+  <Box maxWidth={'1000px'} margin="auto" marginTop={'100px'}>
+    <UploadForm processFile={identifyText}></UploadForm>
+    <Box
+      backgroundColor={'gray.100'}
+      marginTop={'20px'}
+      height={'300px'}
+      overflowY="auto"
+      padding={'10px'}
+    >
+      <Text>{text}</Text>
+    </Box>
+  </Box>
+)
+```
+
+## Troubleshooting
+
+if received not authorized to call textract api, goto iam in aws console to check permission for both auth and unauth id created by cognito id pools.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "rekognition:DetectText",
+        "rekognition:DetectLabel",
+        "textract:AnalyzeDocument",
+        "textract:DetectDocumentText",
+        "textract:GetDocumentAnalysis",
+        "textract:StartDocumentAnalysis",
+        "textract:StartDocumentTextDetection"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    }
+  ]
+}
+```
