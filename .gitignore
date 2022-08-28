@@ -4,8 +4,8 @@
 /node_modules
 /.pnp
 .pnp.js
-amplify 
-**aws-exports.js 
+amplify
+**aws-exports.js
 **aws-exports.json
 
 # testing
